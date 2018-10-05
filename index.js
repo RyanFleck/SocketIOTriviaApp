@@ -3,18 +3,26 @@ const http = require('http').Server(app);
 const port = process.env.PORT || 3000;
 const io = require('socket.io')(http);
 
+let users_online = 0;
 
 // SOCKET.IO
 
-/*
-// Heroku compatability.
-io.configure(function () {
-    io.set("transports", ["xhr-polling"]);
-    io.set("polling duration", 10);
-});*/
 
 io.on('connection', (socket)=>{
-    console.log("Connection event. "+socket.id);
+    let user = socket.id;
+    users_online += 1;
+    io.emit('message out', "User "+user+" has joined. Users online: "+users_online);
+
+    console.log("Connection event. User "+user);
+    socket.on('disconnect',(user)=>{
+        users_online -= 1;
+        console.log("User "+user+" disconnected.");
+    });
+
+    socket.on('message', (message)=>{
+        console.log(user+" sent message: "+message);
+        io.emit('message out', message);
+    });
 });
 
 // EXPRESS

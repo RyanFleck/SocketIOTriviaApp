@@ -73,8 +73,24 @@
         }
     </style>
     <script src="/socket.io/socket.io.js"></script>
+    <script src="https://code.jquery.com/jquery-1.11.1.js"></script>
     <script>
-        var socket = io();
+        $(function () {
+            var socket = io();
+
+            $('form').submit(function(){
+              socket.emit('message', $('#chat-input-textbox').val());
+              $('#chat-input-textbox').val('');
+              return false;
+            });
+
+            socket.on('message out', function(m){
+                $('#messages').append($('<li>').text(m));
+                var elem = $('.chat-window');
+                elem.scrollTop(elem[0].scrollHeight);
+            });
+
+          });
     </script>
   </head>
   <body>
@@ -86,19 +102,7 @@
 
       <div class="chat-window">
         <ul id="messages">
-            <li>One</li>
-            <li>Two</li>
-            <li>Three</li>
-            <li>Four</li>
-            <li>Five</li>
-            <li>Six</li>
-            <li>Seven</li>
-            <li>Eight</li>
-            <li>Nine</li>
-            <li>Ten</li>
-            <li>Eleven</li>
-            <li>Twelve</li>
-            <li>Thirteen</li>
+            <li>Welcome!</li>
         </ul>
       </div>
       <div class="chat-input">
