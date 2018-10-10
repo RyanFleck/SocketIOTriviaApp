@@ -6,7 +6,23 @@ const io = require('socket.io')(http);
 
 let usersOnline = 0;
 
-// Data
+// Chat Data Blob (Last 5 messages.) [ [ Name, Color, Message ] ]
+
+const chat = [
+    ['Admin', 'red', 'System init 1.'],
+    ['Admin', 'red', 'System init 2.'],
+    ['Admin', 'red', 'System init 3.'],
+    ['Admin', 'red', 'System init 4.'],
+    ['Admin', 'red', 'System init 5.'],
+];
+
+function addToHistory(name, color, message) {
+    chat.push([name, color, message]);
+    chat.shift();
+}
+
+
+// User Data Blob
 
 class UserBlob {
     constructor(s) {
@@ -14,6 +30,7 @@ class UserBlob {
         this.name = s.replace(/\W/g, '').slice(0, 5).toUpperCase();
         this.color = '#43ca43';
         this.team = 'None';
+        this.loggedin = false;
     }
 
     formatMessageObject(fmessage) {
@@ -33,11 +50,20 @@ class UserBlob {
     }
 
     sendMessage(messageout) {
-        io.emit('message out', {
-            username: this.name,
-            usercolor: this.color,
-            message: messageout,
-        });
+        if (this.loggedin) {
+            io.emit('message out', {
+                username: this.name,
+                usercolor: this.color,
+                message: messageout,
+            });
+            addToHistory(this.name, this.color, messageout);
+        } else {
+            io.to(this.socket).emit('announce', {
+                username: this.name,
+                usercolor: this.color,
+                message: ', you need to log in first!',
+            });
+        }
     }
 
     announce(messageout) {
@@ -50,13 +76,7 @@ class UserBlob {
 
     updateName(newname) {
         this.name = newname;
-        this.changePage('index');
-    }
-
-    changePage(pageid) {
-        io.to(this.socket).emit('goto', {
-            page: pageid,
-        });
+        this.loggedin = true;
     }
 }
 
@@ -66,7 +86,13 @@ class UserBlob {
 io.on('connection', (socket) => {
     const user = new UserBlob(socket.id);
     usersOnline += 1;
-    user.announce('has joined the chat!');
+
+    chat.map(x => io.to(user.socket).emit('message out', {
+        username: x[0],
+        usercolor: x[1],
+        message: x[2],
+    }));
+
     // io.emit('message out', "User "+user.name+" has joined. Users online: "+usersOnline);
 
     console.log(`Connection event. User ${user.name}`);
@@ -81,9 +107,11 @@ io.on('connection', (socket) => {
         user.sendMessage(message);
     });
 
-    socket.on('save-username', (username) => {
+    socket.on('login', (username) => {
         console.log(`${user.name} updated username: ${username}`);
         user.updateName(username);
+        io.to(user.socket).emit('logged-in', user.name);
+        user.announce('has joined the chat!');
     });
 });
 
@@ -93,7 +121,7 @@ app.get('/', (req, res) => {
     // req is http request info.
     // res is http response.
 
-    res.sendFile(`${__dirname}/entername.html`);
+    res.sendFile(`${__dirname}/index.html`);
 });
 
 app.get('/trivia', (req, res) => {
