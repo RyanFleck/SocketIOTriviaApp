@@ -9,8 +9,9 @@ let usersOnline = 0;
 // Data
 
 class UserBlob {
-    constructor(name) {
-        this.name = name;
+    constructor(s) {
+        this.socket = s;
+        this.name = s.replace(/\W/g, '').slice(0, 5).toUpperCase();
         this.color = '#43ca43';
         this.team = 'None';
     }
@@ -46,27 +47,43 @@ class UserBlob {
             message: messageout,
         });
     }
+
+    updateName(newname) {
+        this.name = newname;
+        this.changePage('index');
+    }
+
+    changePage(pageid) {
+        io.to(this.socket).emit('goto', {
+            page: pageid,
+        });
+    }
 }
 
 
 // SOCKET.IO
 
 io.on('connection', (socket) => {
-    const user = new UserBlob(socket.id.replace(/\W/g, '').slice(0, 5).toUpperCase());
+    const user = new UserBlob(socket.id);
     usersOnline += 1;
     user.announce('has joined the chat!');
     // io.emit('message out', "User "+user.name+" has joined. Users online: "+usersOnline);
 
-    console.log(`Connection event. User ${  user.name}`);
+    console.log(`Connection event. User ${user.name}`);
     socket.on('disconnect', () => {
         usersOnline -= 1;
         user.announce('has disconnected.');
-        console.log(`User ${  user.name  } disconnected.`);
+        console.log(`User ${user.name} disconnected.`);
     });
 
     socket.on('message', (message) => {
         console.log(`${user.name} sent message: ${message}`);
         user.sendMessage(message);
+    });
+
+    socket.on('save-username', (username) => {
+        console.log(`${user.name} updated username: ${username}`);
+        user.updateName(username);
     });
 });
 
@@ -76,7 +93,7 @@ app.get('/', (req, res) => {
     // req is http request info.
     // res is http response.
 
-    res.sendFile(`${__dirname}/index.html`);
+    res.sendFile(`${__dirname}/entername.html`);
 });
 
 app.get('/trivia', (req, res) => {
