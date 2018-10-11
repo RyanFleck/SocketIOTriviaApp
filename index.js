@@ -9,11 +9,11 @@ let usersOnline = 0;
 // Chat Data Blob (Last 5 messages.) [ [ Name, Color, Message ] ]
 
 const chat = [
-    ['Admin', 'red', 'System init 1.'],
-    ['Admin', 'red', 'System init 2.'],
-    ['Admin', 'red', 'System init 3.'],
-    ['Admin', 'red', 'System init 4.'],
-    ['Admin', 'red', 'System init 5.'],
+    ['Starty Coreman', 'red', 'Booting system...'],
+    ['Node Jenise', 'blue', 'Express is alright.'],
+    ['Scotty Othello', 'green', 'Socket.IO is alright.'],
+    ['Teddy Ousadmin', 'purple', 'Double-checking the math...'],
+    ['Preflite Chex', 'gray', 'All systems are go for liftoff.'],
 ];
 
 function addToHistory(name, color, message) {
@@ -108,7 +108,7 @@ io.on('connection', (socket) => {
     });
 
     socket.on('login', (username) => {
-        console.log(`${user.name} updated username: ${username}`);
+        console.log(`${user.name} logged in as: ${username}`);
         user.updateName(username);
         io.to(user.socket).emit('logged-in', user.name);
         user.announce('has joined the chat!');
