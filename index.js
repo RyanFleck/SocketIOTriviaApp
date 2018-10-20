@@ -1,4 +1,5 @@
-const app = require('express')();
+const express = require('express');
+const app = express();
 const http = require('http').Server(app);
 
 const port = process.env.PORT || 3000;
@@ -50,18 +51,25 @@ class UserBlob {
     }
 
     sendMessage(messageout) {
-        if (this.loggedin) {
+        if (this.loggedin && messageout) {
             io.emit('message out', {
                 username: this.name,
                 usercolor: this.color,
                 message: messageout,
             });
             addToHistory(this.name, this.color, messageout);
-        } else {
+        } else if ( !this.loggedin ){
             io.to(this.socket).emit('announce', {
                 username: this.name,
                 usercolor: this.color,
                 message: ', you need to log in first!',
+                
+            });
+        } else {
+            io.to(this.socket).emit('announce', {
+                username: this.name,
+                usercolor: this.color,
+                message: ', your message is empty!',
             });
         }
     }
@@ -117,18 +125,12 @@ io.on('connection', (socket) => {
 
 // EXPRESS
 
+app.use(express.static('resources'));
+
 app.get('/', (req, res) => {
     // req is http request info.
     // res is http response.
-
     res.sendFile(`${__dirname}/index.html`);
-});
-
-app.get('/trivia', (req, res) => {
-    // req is http request info.
-    // res is http response.
-
-    res.send('<h1>Not Yet</h1>');
 });
 
 http.listen(port, () => {

@@ -3,57 +3,10 @@
   <head>
     <meta charset="utf-8">
     <title>RCF LAB</title>
-    <style>
-        html{
-            padding: 2em;
-            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif, "Apple Color Emoji", "Segoe UI Emoji", "Segoe UI Symbol";
-            font-size: 16px;
-            font-weight: 400;
-        }
-        ul{
-          list-style-type:none;
-          padding-left: 0;
-        }
-    </style>
-    <script src="/socket.io/socket.io.js"></script>
-    <script src="https://code.jquery.com/jquery-1.11.1.js"></script>
-    <script>
-        $(function () {
-            var socket = io();
-
-            $('#login-form').submit(function(){
-              var elem = $('#login-input-textbox');
-              socket.emit('login', elem.val());
-              elem.val('');
-              return false;
-            });
-
-            socket.on('logged-in', function(u){
-                $('#login').attr('style','display:none;');
-                $('#chat-input-textbox').attr('placeholder',"Send a message...");
-                $('#chat').attr('style','display:block;');
-            });
-
-            $('#chat-form').submit(function(){
-                socket.emit('message', $('#chat-input-textbox').val());
-                $('#chat-input-textbox').val('');
-                return false;
-              });
-
-
-
-            socket.on('message out', function(m){
-                $('#messages').append(
-                    $("<li><span style=\"color:"+m.usercolor+"\">"+ m.username+"</span>: "+m.message+"</li>"));
-            });
-
-            socket.on('announce', function(m){
-                $('#messages').append(
-                    $("<li>User <span style=\"color:"+m.usercolor+"\">"+ m.username+"</span> "+m.message+"</li>"));
-            });
-
-          });
-    </script>
+    <script src="/socket.io/socket.io.js" type="application/javascript"></script>
+    <script src="/lib/jquery-3.3.1.min.js" type="application/javascript"></script>
+    <script src="/main.js" type="application/javascript"></script>
+    <link href="/main.css" rel="stylesheet">
   </head>
   <body>
 
@@ -62,7 +15,7 @@
     <div class="page-section" id="title">
       <h1 class="page-title">Express + Socket.IO Test</h1>
       <p>
-        Node.JS frameworks Express and Socket.IO enable developers to quickly prototype apps requiring bi-directional communication between the client and server. See below for a chat app and leaderboards for this <a href="/trivia">simple trivia.</a>
+        Node.JS frameworks Express and Socket.IO enable developers to quickly prototype apps requiring bi-directional communication between the client and server. See below for a chat app and leaderboards for this simple trivia.
       </p>
 
     </div>
