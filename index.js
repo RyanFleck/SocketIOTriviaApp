@@ -5,6 +5,9 @@ const http = require('http').Server(app);
 const port = process.env.PORT || 3000;
 const io = require('socket.io')(http);
 
+const highscores = require('./data/highscores.json');
+const messages = require('./data/messages.json');
+
 let usersOnline = 0;
 
 // Chat Data Blob (Last 5 messages.) [ [ Name, Color, Message ] ]
