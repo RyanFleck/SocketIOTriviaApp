@@ -1,17 +1,53 @@
 const express = require('express');
+
 const app = express();
+
 const http = require('http').Server(app);
+const io = require('socket.io')(http);
+const helmet = require('helmet');
+
+const TRIVIA_QUESTIONS = 2;
+
+// const { Client } = require('pg');
+require('dotenv').config();
+
 
 const port = process.env.PORT || 3000;
-const io = require('socket.io')(http);
 
-const highscores = require('./data/highscores.json');
-const messages = require('./data/messages.json');
 
-let usersOnline = 0;
+// Temp data to load into psql for development.
+// const highscores = require('./data/highscores.json');
+// const messages = require('./data/messages.json');
+const questions = require('./data/questions.json');
+
+const numQuestions = questions.length;
+console.log(`${numQuestions} questions loaded.`);
+
+
+// Init postgres server.
+// https://mherman.org/blog/postgresql-and-nodejs/
+/*
+const pgClient = new Client({
+    connectionString: process.env.DATABASE_URL,
+    ssl: true,
+});
+
+pgClient.connect();
+
+console.log(`This should run... ${process.env.DATABASE_URL}`);
+let q = pgClient.query('SELECT table_schema,table_name FROM information_schema.tables;', (err, res) => {
+    console.log('Querying...');
+    if (err) throw err;
+    for (const row of res.rows) {
+        console.log(JSON.stringify(row));
+    }
+    pgClient.end();
+});
+q.on('end', () => console.log('Query finished.'));
+*/
 
 // Chat Data Blob (Last 5 messages.) [ [ Name, Color, Message ] ]
-
+let usersOnline = 0;
 const chat = [
     ['Starty Coreman', 'red', 'Booting system...'],
     ['Node Jenise', 'blue', 'Express is alright.'],
@@ -35,6 +71,9 @@ class UserBlob {
         this.color = '#43ca43';
         this.team = 'None';
         this.loggedin = false;
+        this.questionSet = [];
+        this.getQuestionSet();
+        this.correctAns = '';
     }
 
     formatMessageObject(fmessage) {
@@ -61,12 +100,12 @@ class UserBlob {
                 message: messageout,
             });
             addToHistory(this.name, this.color, messageout);
-        } else if ( !this.loggedin ){
+        } else if (!this.loggedin) {
             io.to(this.socket).emit('announce', {
                 username: this.name,
                 usercolor: this.color,
                 message: ', you need to log in first!',
-                
+
             });
         } else {
             io.to(this.socket).emit('announce', {
@@ -88,6 +127,32 @@ class UserBlob {
     updateName(newname) {
         this.name = newname;
         this.loggedin = true;
+    }
+
+    getQuestionSet() {
+        this.questionSet = ['lol'];
+
+        const max = numQuestions;
+        const uidArr = [];
+        while (uidArr.length < TRIVIA_QUESTIONS) {
+            const temp = Math.floor(Math.random() * max);
+            console.log(`Found Q${temp}`);
+            console.log(uidArr);
+            if (uidArr.indexOf(temp) === -1) {
+                uidArr.push(temp);
+                console.log(`Push Q${temp}`);
+            }
+        }
+        this.questionSet = questions.filter(x => uidArr.indexOf(x.id) > -1);
+        console.log(uidArr);
+        console.log(this.questionSet);
+    }
+
+    sendNextQuestion() {
+        const nextquestion = questions[0];
+        this.correctAns = nextquestion.answer;
+        delete nextquestion.answer;
+        io.to(this.socket).emit('new-question', nextquestion);
     }
 }
 
@@ -124,11 +189,16 @@ io.on('connection', (socket) => {
         io.to(user.socket).emit('logged-in', user.name);
         user.announce('has joined the chat!');
     });
+
+    socket.on('get-new-question', () => {
+        user.sendNextQuestion();
+    });
 });
 
 // EXPRESS
 
 app.use(express.static('resources'));
+app.use(helmet());
 
 app.get('/', (req, res) => {
     // req is http request info.

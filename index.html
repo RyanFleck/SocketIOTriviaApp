@@ -22,15 +22,15 @@
 
     <!-- SWITCH-BUTTON MARKUP -->
 
-    <div id="switch-button">Trivia</div>
+    <button class="interactive" id="switch-button" style="display:none;">Trivia</button>
 
     <!-- LOGIN MARKUP -->
 
     <div class="page-section" id="login">
         <h2>Please Log In to Chat</h2>
         <form id="login-form" action="">
-                <input type="text" placeholder="Username" id="login-input-textbox" autocomplete="off"/>
-                <button>Log In</button>
+                <input  class="interactive" type="text" placeholder="Username" id="login-input-textbox" autocomplete="off"/>
+                <button class="interactive" >Log In</button>
         </form>
     </div>
 
@@ -44,19 +44,25 @@
       </div>
       <div class="chat-input tall">
           <form id="chat-form" action="">
-              <input id="chat-input-textbox" placeholder="Login to send messages" autocomplete="off" />
-              <button>Send</button>
+              <input class="interactive" id="chat-input-textbox" placeholder="Login to send messages" autocomplete="off" />
+              <button class="interactive">Send</button>
           </form>
       </div>
     </div>
 
     <!-- QUIZ MARKUP -->
 
-    <div class="page-section" id="quiz" style="display:none;">
-      <h2>Quiz</h2>
-      <p>This space will contain a quiz.</p>
-    </div>
+    <div class="page-section" id="trivia" style="display:none;">
+      <h2>Trivia</h2>
+      <div id="trivia-question"></div>
+      <form>
+        <div id="trivia-ans-a"></div>
+        <div id="trivia-ans-b"></div>
+        <div id="trivia-ans-c"></div>
+        <div id="trivia-ans-d"></div>
+      </form>
 
+    </div>
 
   </body>
 </html>

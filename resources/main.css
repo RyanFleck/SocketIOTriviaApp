@@ -4,11 +4,20 @@ html{
     font-size: 16px;
     font-weight: 400;
 }
+
 ul{
   list-style-type:none;
   padding-left: 0;
 }
 
-#switch-button{
-    display:block;
+.interactive {
+    background: #FFF;
+    border: 1px solid #CCC;
+    border-radius: 3px;
+    padding: 0.5em;
+}
+
+.interactive:focus {
+    background: #FFF;
+    border: 1px solid aliceblue;
 }
