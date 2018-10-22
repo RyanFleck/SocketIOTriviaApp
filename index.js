@@ -6,7 +6,9 @@ const http = require('http').Server(app);
 const io = require('socket.io')(http);
 const helmet = require('helmet');
 
-const TRIVIA_QUESTIONS = 2;
+// Security++ => https://helmetjs.github.io/
+
+const TRIVIA_QUESTIONS = 3;
 
 // const { Client } = require('pg');
 require('dotenv').config();
@@ -72,8 +74,10 @@ class UserBlob {
         this.team = 'None';
         this.loggedin = false;
         this.questionSet = [];
-        this.getQuestionSet();
         this.correctAns = '';
+        this.currentQ = undefined;
+        this.score = 0;
+        this.getQuestionSet();
     }
 
     formatMessageObject(fmessage) {
@@ -130,29 +134,36 @@ class UserBlob {
     }
 
     getQuestionSet() {
-        this.questionSet = ['lol'];
-
-        const max = numQuestions;
         const uidArr = [];
         while (uidArr.length < TRIVIA_QUESTIONS) {
-            const temp = Math.floor(Math.random() * max);
-            console.log(`Found Q${temp}`);
-            console.log(uidArr);
+            const temp = Math.floor(Math.random() * numQuestions);
             if (uidArr.indexOf(temp) === -1) {
                 uidArr.push(temp);
-                console.log(`Push Q${temp}`);
             }
         }
+        console.log(`Adding Questions ${uidArr.join(" ")}`);
         this.questionSet = questions.filter(x => uidArr.indexOf(x.id) > -1);
-        console.log(uidArr);
-        console.log(this.questionSet);
     }
 
-    sendNextQuestion() {
-        const nextquestion = questions[0];
-        this.correctAns = nextquestion.answer;
-        delete nextquestion.answer;
-        io.to(this.socket).emit('new-question', nextquestion);
+    sendNextQuestion(lastAnswer) {
+        if (lastAnswer) {
+            console.log(`${lastAnswer} == ${this.correctAns}? (Q:${this.currentQ})`);
+        }
+
+        if (lastAnswer && lastAnswer.toString().trim() === this.correctAns) {
+            this.score += 1;
+        }
+
+        if (this.questionSet[0]) {
+            const nextquestion = this.questionSet.shift();
+            console.log(nextquestion);
+            this.currentQ = nextquestion.id;
+            this.correctAns = nextquestion.correct;
+            delete nextquestion.correct;
+            io.to(this.socket).emit('new-question', nextquestion);
+        } else {
+            io.to(this.socket).emit('trivia-over', ['Final score: ', this.score].join(''));
+        }
     }
 }
 
@@ -190,8 +201,8 @@ io.on('connection', (socket) => {
         user.announce('has joined the chat!');
     });
 
-    socket.on('get-new-question', () => {
-        user.sendNextQuestion();
+    socket.on('get-new-question', (lastAnswer) => {
+        user.sendNextQuestion(lastAnswer);
     });
 });
 

@@ -21,3 +21,8 @@ ul{
     background: #FFF;
     border: 1px solid aliceblue;
 }
+
+.nl {
+    display: block;
+    margin: 10px 0px;
+}

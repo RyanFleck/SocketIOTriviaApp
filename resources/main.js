@@ -21,6 +21,7 @@ $(function () {
     var triviaB = $('#trivia-ans-b');
     var triviaC = $('#trivia-ans-c');
     var triviaD = $('#trivia-ans-d');
+    var devCycleQ = $('#temp-dev-next');
 
     $('#login-form').submit(function(){
       var elem = $('#login-input-textbox');
@@ -39,6 +40,7 @@ $(function () {
         chatPane.attr('style','display:block;');
         switchButton.attr('style','display:block;');
         chatInput.focus();
+        socket.emit('get-new-question');
     });
 
     $('#chat-form').submit(function(){
@@ -102,9 +104,32 @@ $(function () {
 
     socket.on('new-question', function(q){
         console.log("Recieving new question...");
+        var a = q.answers;
+        updateTrivia(q.question, a.a, a.b, a.c, a.d);
         console.log(q);
     });
-
-    socket.emit('get-new-question');
-
+    
+    triviaA.click(function(){answerClick(triviaA,'A')});
+    triviaB.click(function(){answerClick(triviaB,'B')});
+    triviaC.click(function(){answerClick(triviaC,'C')});
+    triviaD.click(function(){answerClick(triviaD,'D')});
+    
+    socket.on('trivia-over', function(score){
+        console.log("Trivia over.");
+        updateTrivia(score);
+        devCycleQ.attr('style','display:none;');
+    });
+    
+    function answerClick(button, answer){
+        socket.emit('get-new-question', answer);
+        button.blur();
+    }
+    
+    function updateTrivia(q,a,b,c,d){
+        triviaQuestion.html(q);
+        triviaA.html(a);
+        triviaB.html(b);
+        triviaC.html(c);
+        triviaD.html(d);
+    }
 });
