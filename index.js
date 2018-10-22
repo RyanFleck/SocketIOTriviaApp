@@ -141,17 +141,14 @@ class UserBlob {
                 uidArr.push(temp);
             }
         }
-        console.log(`Adding Questions ${uidArr.join(" ")}`);
+        console.log(`Adding Questions ${uidArr.join(' ')}`);
         this.questionSet = questions.filter(x => uidArr.indexOf(x.id) > -1);
     }
 
     sendNextQuestion(lastAnswer) {
-        if (lastAnswer) {
-            console.log(`${lastAnswer} == ${this.correctAns}? (Q:${this.currentQ})`);
-        }
-
-        if (lastAnswer && lastAnswer.toString().trim() === this.correctAns) {
+        if (this.currentQ && lastAnswer && lastAnswer.toString().trim() === this.correctAns) {
             this.score += 1;
+            this.currentQ = undefined;
         }
 
         if (this.questionSet[0]) {
@@ -159,10 +156,13 @@ class UserBlob {
             console.log(nextquestion);
             this.currentQ = nextquestion.id;
             this.correctAns = nextquestion.correct;
-            delete nextquestion.correct;
-            io.to(this.socket).emit('new-question', nextquestion);
+            const censored = nextquestion;
+            delete censored.answer;
+            io.to(this.socket).emit('new-question', censored);
         } else {
             io.to(this.socket).emit('trivia-over', ['Final score: ', this.score].join(''));
+            this.announce(`scored ${this.score}!`);
+            // Need to redesign the input handling system.
         }
     }
 }

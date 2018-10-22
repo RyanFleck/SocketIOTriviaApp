@@ -6,7 +6,7 @@
             "a":"Answer A",
             "b":"Answer B",
             "c":"Answer C",
-            "d":"Answer D"
+            "d":"Answer D, the correct one."
         },
         "correct":"D"
     },
@@ -14,7 +14,7 @@
         "id":1,
         "question":"Test question one. Answer is A.",
         "answers":{
-            "a":"Answer A",
+            "a":"Answer A, the correct one.",
             "b":"Answer B",
             "c":"Answer C",
             "d":"Answer D"
@@ -26,7 +26,7 @@
         "question":"Test question two. Answer is B.",
         "answers":{
             "a":"Answer A",
-            "b":"Answer B",
+            "b":"Answer B, the correct one.",
             "c":"Answer C",
             "d":"Answer D"
         },
@@ -38,7 +38,7 @@
         "answers":{
             "a":"Answer A",
             "b":"Answer B",
-            "c":"Answer C",
+            "c":"Answer C, the correct one.",
             "d":"Answer D"
         },
         "correct":"C"
@@ -50,7 +50,7 @@
             "a":"Answer A",
             "b":"Answer B",
             "c":"Answer C",
-            "d":"Answer D"
+            "d":"Answer D, the correct one."
         },
         "correct":"D"
     },
@@ -60,7 +60,7 @@
         "answers":{
             "a":"Answer A",
             "b":"Answer B",
-            "c":"Answer C",
+            "c":"Answer C, the correct one.",
             "d":"Answer D"
         },
         "correct":"C"

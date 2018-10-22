@@ -118,6 +118,7 @@ $(function () {
         console.log("Trivia over.");
         updateTrivia(score);
         devCycleQ.attr('style','display:none;');
+        hideTriviaButtons();
     });
     
     function answerClick(button, answer){
@@ -131,5 +132,12 @@ $(function () {
         triviaB.html(b);
         triviaC.html(c);
         triviaD.html(d);
+    }
+
+    function hideTriviaButtons(){
+        triviaA.attr('style','display:none;');
+        triviaB.attr('style','display:none;');
+        triviaC.attr('style','display:none;');
+        triviaD.attr('style','display:none;');
     }
 });
