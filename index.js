@@ -24,6 +24,7 @@ const questions = require('./data/questions.json');
 
 const numQuestions = questions.length;
 console.log(`${numQuestions} questions loaded.`);
+const highScoreData = [];
 
 
 // Init postgres server.
@@ -167,8 +168,20 @@ class UserBlob {
         } else {
             io.to(this.socket).emit('trivia-over', ['Final score: ', this.score, '/',TRIVIA_QUESTIONS].join(''));
             this.announce(`scored ${this.score}/${TRIVIA_QUESTIONS}!`);
+            this.postHighScore(this.score);
             // Need to redesign the input handling system.
         }
+    }
+
+    postHighScore(s){
+        let hsdata = {
+            'score':s,
+            'name':this.name,
+            'color':this.color
+        }
+        highScoreData.push(hsdata);
+        highScoreData.sort((a,b)=> b.score - a.score);
+        io.emit('new-highscore',highScoreData);
     }
 }
 
@@ -204,6 +217,7 @@ io.on('connection', (socket) => {
         user.updateName(username);
         io.to(user.socket).emit('logged-in', user.name);
         user.announce('has joined the chat!');
+        io.emit('new-highscore',highScoreData);
         user.sendNextQuestion();
         
     });

@@ -22,6 +22,7 @@ $(function () {
     var triviaC = $('#trivia-ans-c');
     var triviaD = $('#trivia-ans-d');
     var devCycleQ = $('#temp-dev-next');
+    var highScores = $('#high-scores')
 
     $('#login-form').submit(function(){
       var elem = $('#login-input-textbox');
@@ -57,6 +58,15 @@ $(function () {
     socket.on('announce', function(m){
         $('#messages').append(
             $("<li>User <span style=\"color:"+m.usercolor+"\">"+ m.username+"</span> "+m.message+"</li>"));
+    });
+    
+    socket.on('new-highscore', function(hs){
+        console.log("New highscore.");
+        highScores.html(''); 
+        for(var x=0;x<hs.length;x++){
+            highScores.append(
+            $("<li><span style=\"color:"+hs[x].color+"\">"+ hs[x].name+"</span>: "+hs[x].score+"</li>"));
+        }
     });
 
 
@@ -119,6 +129,7 @@ $(function () {
         updateTrivia(score);
         devCycleQ.attr('style','display:none;');
         hideTriviaButtons();
+        $('#highscores').attr('style','display:block;');
     });
     
     function answerClick(button, answer){
