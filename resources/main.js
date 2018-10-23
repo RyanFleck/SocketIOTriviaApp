@@ -4,7 +4,7 @@ $(function () {
     var state = 'chat';
 
     // Immediately set focus on username entry.
-    $('#login-input-textbox').focus();
+    // $('#login-input-textbox').focus();
 
     /*
      * Page components:
@@ -39,7 +39,7 @@ $(function () {
         chatInput.attr('placeholder',"Send a message...");
         chatPane.attr('style','display:block;');
         switchButton.attr('style','display:block;');
-        chatInput.focus();
+        // chatInput.focus();
         socket.emit('get-new-question');
     });
 
@@ -122,7 +122,7 @@ $(function () {
     });
     
     function answerClick(button, answer){
-        socket.emit('get-new-question', answer);
+        socket.emit('submit-answer', answer);
         button.blur();
     }
     

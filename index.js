@@ -144,13 +144,18 @@ class UserBlob {
         console.log(`Adding Questions ${uidArr.join(' ')}`);
         this.questionSet = questions.filter(x => uidArr.indexOf(x.id) > -1);
     }
-
-    sendNextQuestion(lastAnswer) {
-        if (this.currentQ && lastAnswer && lastAnswer.toString().trim() === this.correctAns) {
-            this.score += 1;
-            this.currentQ = undefined;
+    
+    checkAnswer(a){
+        console.log(`User answered ${a}. Correct == ${this.correctAns}`)
+        if( a == this.correctAns){
+            this.score+=1;
+            return true;
         }
+        return false;
+    }
 
+
+    sendNextQuestion() {
         if (this.questionSet[0]) {
             const nextquestion = this.questionSet.shift();
             console.log(nextquestion);
@@ -160,8 +165,8 @@ class UserBlob {
             delete censored.answer;
             io.to(this.socket).emit('new-question', censored);
         } else {
-            io.to(this.socket).emit('trivia-over', ['Final score: ', this.score].join(''));
-            this.announce(`scored ${this.score}!`);
+            io.to(this.socket).emit('trivia-over', ['Final score: ', this.score, '/',TRIVIA_QUESTIONS].join(''));
+            this.announce(`scored ${this.score}/${TRIVIA_QUESTIONS}!`);
             // Need to redesign the input handling system.
         }
     }
@@ -199,10 +204,16 @@ io.on('connection', (socket) => {
         user.updateName(username);
         io.to(user.socket).emit('logged-in', user.name);
         user.announce('has joined the chat!');
+        user.sendNextQuestion();
+        
     });
 
-    socket.on('get-new-question', (lastAnswer) => {
-        user.sendNextQuestion(lastAnswer);
+    socket.on('submit-answer', (lastAnswer) => {
+        if(user.checkAnswer(lastAnswer)){
+            user.sendNextQuestion();
+        }else{
+            user.sendNextQuestion();
+        }
     });
 });
 
