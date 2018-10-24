@@ -18,3 +18,9 @@ Index
 \_ Trivia
   \_ Generated Question Pages
 ```
+
+## Database
+
+Two simple postgres tables.
+
+![](data/initial_postgres.png)

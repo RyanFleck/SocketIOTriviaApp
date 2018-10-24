@@ -228,6 +228,15 @@ class UserBlob {
         highScoreData.push(hsdata);
         highScoreData.sort((a, b) => b.score - a.score);
         io.emit('new-highscore', highScoreData);
+        (async (query) => {
+            const client = await pool.connect();
+            try {
+                const res = await client.query(query);
+                res.rows.map(x => console.log(x));
+            } finally {
+                client.release();
+            }
+        })(`INSERT INTO highscores VALUES ('${this.name}','${this.color}','${s}', current_timestamp)`).catch(e => console.log(e.stack));
     }
 }
 
