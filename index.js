@@ -1,21 +1,17 @@
 const express = require('express');
 const { Pool } = require('pg');
 
-let pool;
 // Initialize postgres pool:
 if (process.env.NODE_ENV !== 'production') {
     require('dotenv').load();
-    pool = new Pool({
-        connectionString: process.env.DATABASE_URL,
-    });
-}else{
-    pool = new Pool({
-        connectionString: process.env.DATABASE_URL,
-        ssl: true,
-    });
 }
 
-const app = express();
+const pool = new Pool({
+    connectionString: process.env.DATABASE_URL,
+    ssl: (process.env.NODE_ENV === 'production'),
+});
+
+    const app = express();
 
 const http = require('http').Server(app);
 const io = require('socket.io')(http);
