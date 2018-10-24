@@ -1,15 +1,16 @@
 const express = require('express');
 const { Pool } = require('pg');
 
+let pool;
 // Initialize postgres pool:
 if (process.env.NODE_ENV !== 'production') {
     require('dotenv').load();
-    const pool = new Pool({
-        connectionString: process.env.DB_CONSTRING,
+    pool = new Pool({
+        connectionString: process.env.DATABASE_URL,
     });
 }else{
-    const pool = new Pool({
-        connectionString: process.env.DB_CONSTRING,
+    pool = new Pool({
+        connectionString: process.env.DATABASE_URL,
         ssl: true,
     });
 }
