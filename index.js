@@ -1,6 +1,11 @@
 const express = require('express');
+const { Pool } = require('pg');
+require('dotenv').config();
 
 const app = express();
+const pool = new Pool({
+    connectionString: process.env.DB_CONSTRING,
+});
 
 const http = require('http').Server(app);
 const io = require('socket.io')(http);
@@ -9,13 +14,45 @@ const helmet = require('helmet');
 // Security++ => https://helmetjs.github.io/
 
 const TRIVIA_QUESTIONS = 3;
-
-// const { Client } = require('pg');
-require('dotenv').config();
-
-
 const port = process.env.PORT || 3000;
 
+// POSTGRES:
+pool.on('error', (err, client) => {
+    console.error('Unexpected error on idle client', err);
+    process.exit(-1);
+});
+
+(async (query) => {
+    const client = await pool.connect();
+    try {
+        const res = await client.query(query);
+        res.rows.map(x => console.log(x));
+    } finally {
+        client.release();
+    }
+})(`CREATE TABLE IF NOT EXISTS
+messages(
+username VARCHAR(140) NOT NULL,
+color VARCHAR(20) NOT NULL,
+message VARCHAR(300) NOT NULL,
+time TIMESTAMP
+)`).catch(e => console.log(e.stack));
+
+(async (query) => {
+    const client = await pool.connect();
+    try {
+        const res = await client.query(query);
+        res.rows.map(x => console.log(x));
+    } finally {
+        client.release();
+    }
+})(`CREATE TABLE IF NOT EXISTS
+highscores(
+username VARCHAR(140) NOT NULL,
+color VARCHAR(20) NOT NULL,
+score INT NOT NULL,
+time TIMESTAMP
+)`).catch(e => console.log(e.stack));
 
 // Temp data to load into psql for development.
 // const highscores = require('./data/highscores.json');
@@ -62,6 +99,15 @@ const chat = [
 function addToHistory(name, color, message) {
     chat.push([name, color, message]);
     chat.shift();
+    (async (query) => {
+        const client = await pool.connect();
+        try {
+            const res = await client.query(query);
+            res.rows.map(x => console.log(x));
+        } finally {
+            client.release();
+        }
+    })(`INSERT INTO messages VALUES ('${name}','${color}','${message}', current_timestamp)`).catch(e => console.log(e.stack));
 }
 
 
@@ -145,11 +191,11 @@ class UserBlob {
         console.log(`Adding Questions ${uidArr.join(' ')}`);
         this.questionSet = questions.filter(x => uidArr.indexOf(x.id) > -1);
     }
-    
-    checkAnswer(a){
-        console.log(`User answered ${a}. Correct == ${this.correctAns}`)
-        if( a == this.correctAns){
-            this.score+=1;
+
+    checkAnswer(a) {
+        console.log(`User answered ${a}. Correct == ${this.correctAns}`);
+        if (a == this.correctAns) {
+            this.score += 1;
             return true;
         }
         return false;
@@ -166,22 +212,22 @@ class UserBlob {
             delete censored.answer;
             io.to(this.socket).emit('new-question', censored);
         } else {
-            io.to(this.socket).emit('trivia-over', ['Final score: ', this.score, '/',TRIVIA_QUESTIONS].join(''));
+            io.to(this.socket).emit('trivia-over', ['Final score: ', this.score, '/', TRIVIA_QUESTIONS].join(''));
             this.announce(`scored ${this.score}/${TRIVIA_QUESTIONS}!`);
             this.postHighScore(this.score);
             // Need to redesign the input handling system.
         }
     }
 
-    postHighScore(s){
-        let hsdata = {
-            'score':s,
-            'name':this.name,
-            'color':this.color
-        }
+    postHighScore(s) {
+        const hsdata = {
+            score: s,
+            name: this.name,
+            color: this.color,
+        };
         highScoreData.push(hsdata);
-        highScoreData.sort((a,b)=> b.score - a.score);
-        io.emit('new-highscore',highScoreData);
+        highScoreData.sort((a, b) => b.score - a.score);
+        io.emit('new-highscore', highScoreData);
     }
 }
 
@@ -217,15 +263,14 @@ io.on('connection', (socket) => {
         user.updateName(username);
         io.to(user.socket).emit('logged-in', user.name);
         user.announce('has joined the chat!');
-        io.emit('new-highscore',highScoreData);
+        io.emit('new-highscore', highScoreData);
         user.sendNextQuestion();
-        
     });
 
     socket.on('submit-answer', (lastAnswer) => {
-        if(user.checkAnswer(lastAnswer)){
+        if (user.checkAnswer(lastAnswer)) {
             user.sendNextQuestion();
-        }else{
+        } else {
             user.sendNextQuestion();
         }
     });
