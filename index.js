@@ -11,7 +11,7 @@ const pool = new Pool({
     ssl: (process.env.NODE_ENV === 'production'),
 });
 
-    const app = express();
+const app = express();
 
 const http = require('http').Server(app);
 const io = require('socket.io')(http);
@@ -116,6 +116,8 @@ function addToHistory(name, color, message) {
     })(`INSERT INTO messages VALUES ('${name}','${color}','${message}', current_timestamp)`).catch(e => console.log(e.stack));
 }
 
+// New format INSERT INTO x VALUES (name,color,message)($1,$2,$3);
+// Ensure all INSERT queries are refactored to fit this form.
 
 // User Data Blob
 
