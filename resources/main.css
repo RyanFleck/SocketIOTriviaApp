@@ -28,3 +28,15 @@ ul{
     width: 100%;
     text-align: left;
 }
+
+.red{
+    background: #ff8686;
+}
+
+.green{
+    background: #b9ffbf;
+}
+
+.blue{
+    background: #86beff;
+}

@@ -24,16 +24,38 @@ $(function () {
     var devCycleQ = $('#temp-dev-next');
     var highScores = $('#high-scores')
 
-    $('#login-form').submit(function(){
+
+    // Login buttons (Terrible hack. Sorry.):
+    $('#login-red').click(function(e){
+        e.preventDefault();
+        login('red');
+    });
+    $('#login-blue').click(function(e){
+        e.preventDefault();
+        login('blue');
+    });
+    $('#login-green').click(function(e){
+        e.preventDefault();
+        login('green');
+    });
+
+    $('#login-form').keydown(function(e){
+        if(event.keyCode == 13) {
+        event.preventDefault();
+        return false;
+      }});
+
+    function login( color ){
       var elem = $('#login-input-textbox');
       if(elem.val().length>0){
-        socket.emit('login', elem.val());
+        socket.emit('login', elem.val(), color);
       }else{
         $('#login-input-textbox').attr('placeholder','Minumum one character.');
       }
       elem.val('');
+
       return false;
-    });
+    }
 
     socket.on('logged-in', function(u){
         loginPane.attr('style','display:none;');
@@ -56,16 +78,18 @@ $(function () {
     });
 
     socket.on('announce', function(m){
+        console.log(m.usercolor);
         $('#messages').append(
             $("<li>User <span style=\"color:"+m.usercolor+"\">"+ m.username+"</span> "+m.message+"</li>"));
     });
     
     socket.on('new-highscore', function(hs){
         console.log("New highscore.");
+        console.log(hs);
         highScores.html(''); 
         for(var x=0;x<hs.length;x++){
             highScores.append(
-            $("<li><span style=\"color:"+hs[x].color+"\">"+ hs[x].name+"</span>: "+hs[x].score+"</li>"));
+            $("<li><span style=\"color:"+hs[x].color+"\">"+ hs[x].username+"</span>: "+hs[x].score+"</li>"));
         }
     });
 

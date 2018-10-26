@@ -1,126 +1,97 @@
 const express = require('express');
 const { Pool } = require('pg');
-
-// Initialize postgres pool:
-if (process.env.NODE_ENV !== 'production') {
-    require('dotenv').load();
-}
-
-const pool = new Pool({
-    connectionString: process.env.DATABASE_URL,
-    ssl: (process.env.NODE_ENV === 'production'),
-});
+const fs = require('fs');
 
 const app = express();
 
 const http = require('http').Server(app);
 const io = require('socket.io')(http);
-const helmet = require('helmet');
-
-// Security++ => https://helmetjs.github.io/
+const helmet = require('helmet'); // Security++ => https://helmetjs.github.io/
 
 const TRIVIA_QUESTIONS = 3;
 const port = process.env.PORT || 3000;
+let highScoreData = [];
 
-// POSTGRES:
-pool.on('error', (err, client) => {
+/*
+ * SET UP POSTGRES
+ */
+if (process.env.NODE_ENV !== 'production') {
+    require('dotenv').load();
+}
+const pool = new Pool({
+    connectionString: process.env.DATABASE_URL,
+    ssl: (process.env.NODE_ENV === 'production'), // Change for MNP deployment.
+});
+
+pool.on('error', (err) => {
     console.error('Unexpected error on idle client', err);
     process.exit(-1);
 });
 
-(async (query) => {
+const psqlMessage = 'insert into messages (username, color, message, time) values ($1, $2, $3, current_timestamp);';
+const psqlScore = 'insert into highscores (username, color, score, time) values ($1, $2, $3, current_timestamp);';
+const psqlInit = fs.readFileSync('./data/init_db.sql').toString();
+const psqlGetHigscores = 'select * from highscores order by score desc limit 5;';
+const psqlGetMessages = 'select * from messages order by time desc limit 5;';
+
+// Setup postgres tables, if they don't already exist.
+(async () => {
     const client = await pool.connect();
     try {
-        const res = await client.query(query);
-        res.rows.map(x => console.log(x));
+        await client.query(psqlInit);
     } finally {
         client.release();
     }
-})(`CREATE TABLE IF NOT EXISTS
-messages(
-username VARCHAR(140) NOT NULL,
-color VARCHAR(20) NOT NULL,
-message VARCHAR(300) NOT NULL,
-time TIMESTAMP
-)`).catch(e => console.log(e.stack));
+})().catch(e => console.log(e.stack));
 
-(async (query) => {
+const updateHighScores = async () => {
     const client = await pool.connect();
-    try {
-        const res = await client.query(query);
-        res.rows.map(x => console.log(x));
-    } finally {
-        client.release();
-    }
-})(`CREATE TABLE IF NOT EXISTS
-highscores(
-username VARCHAR(140) NOT NULL,
-color VARCHAR(20) NOT NULL,
-score INT NOT NULL,
-time TIMESTAMP
-)`).catch(e => console.log(e.stack));
+    const res = await client.query(psqlGetHigscores);
+    highScoreData = res.rows;
+    console.log(highScoreData);
+    io.emit('new-highscore', highScoreData);
+};
 
-// Temp data to load into psql for development.
-// const highscores = require('./data/highscores.json');
-// const messages = require('./data/messages.json');
+// Message pane populates with the last ten when a user logs in.
+const initializeMessagePane = async (socket) => {
+    const client = await pool.connect();
+    const res = await client.query(psqlGetMessages);
+    res.rows.reverse().forEach(x => io.to(socket).emit('message out', {
+        username: x.username,
+        usercolor: x.color,
+        message: x.message,
+    }));
+};
+
+/*
+ * SET UP QUESTIONS
+ */
 const questions = require('./data/questions.json');
 
 const numQuestions = questions.length;
 console.log(`${numQuestions} questions loaded.`);
-const highScoreData = [];
 
-
-// Init postgres server.
-// https://mherman.org/blog/postgresql-and-nodejs/
-/*
-const pgClient = new Client({
-    connectionString: process.env.DATABASE_URL,
-    ssl: true,
-});
-
-pgClient.connect();
-
-console.log(`This should run... ${process.env.DATABASE_URL}`);
-let q = pgClient.query('SELECT table_schema,table_name FROM information_schema.tables;', (err, res) => {
-    console.log('Querying...');
-    if (err) throw err;
-    for (const row of res.rows) {
-        console.log(JSON.stringify(row));
-    }
-    pgClient.end();
-});
-q.on('end', () => console.log('Query finished.'));
-*/
 
 // Chat Data Blob (Last 5 messages.) [ [ Name, Color, Message ] ]
 let usersOnline = 0;
-const chat = [
-    ['Starty Coreman', 'red', 'Booting system...'],
-    ['Node Jenise', 'blue', 'Express is alright.'],
-    ['Scotty Othello', 'green', 'Socket.IO is alright.'],
-    ['Teddy Ousadmin', 'purple', 'Double-checking the math...'],
-    ['Preflite Chex', 'gray', 'All systems are go for liftoff.'],
-];
 
 function addToHistory(name, color, message) {
-    chat.push([name, color, message]);
-    chat.shift();
-    (async (query) => {
+    (async () => {
         const client = await pool.connect();
         try {
-            const res = await client.query(query);
-            res.rows.map(x => console.log(x));
+            client.query(psqlMessage, [name, color, message]);
         } finally {
             client.release();
         }
-    })(`INSERT INTO messages VALUES ('${name}','${color}','${message}', current_timestamp)`).catch(e => console.log(e.stack));
+    })().catch(e => console.log(e.stack));
 }
 
-// New format INSERT INTO x VALUES (name,color,message)($1,$2,$3);
-// Ensure all INSERT queries are refactored to fit this form.
-
-// User Data Blob
-
+/*
+ * USERBLOB
+ *
+ * When a new user connects, the socket and all other information is placed in this object.
+ * All important functions related to the user have been created as methods for now.
+ */
 class UserBlob {
     constructor(s) {
         this.socket = s;
@@ -143,12 +114,8 @@ class UserBlob {
         };
     }
 
-    updateColor() {
-        return this.color;
-    }
-
-    updateTeam() {
-        return this.team;
+    updateColor(color) {
+        this.color = color;
     }
 
     sendMessage(messageout) {
@@ -164,7 +131,6 @@ class UserBlob {
                 username: this.name,
                 usercolor: this.color,
                 message: ', you need to log in first!',
-
             });
         } else {
             io.to(this.socket).emit('announce', {
@@ -209,7 +175,6 @@ class UserBlob {
         return false;
     }
 
-
     sendNextQuestion() {
         if (this.questionSet[0]) {
             const nextquestion = this.questionSet.shift();
@@ -228,38 +193,26 @@ class UserBlob {
     }
 
     postHighScore(s) {
-        const hsdata = {
-            score: s,
-            name: this.name,
-            color: this.color,
-        };
-        highScoreData.push(hsdata);
-        highScoreData.sort((a, b) => b.score - a.score);
-        io.emit('new-highscore', highScoreData);
-        (async (query) => {
+        (async () => {
             const client = await pool.connect();
             try {
-                const res = await client.query(query);
-                res.rows.map(x => console.log(x));
+                client.query(psqlScore, [this.name, this.color, s]);
             } finally {
                 client.release();
             }
-        })(`INSERT INTO highscores VALUES ('${this.name}','${this.color}','${s}', current_timestamp)`).catch(e => console.log(e.stack));
+        })().catch(e => console.log(e.stack));
+        updateHighScores();
     }
 }
 
-
-// SOCKET.IO
-
+/*
+ * SET UP SOCKET.IO
+ */
 io.on('connection', (socket) => {
     const user = new UserBlob(socket.id);
     usersOnline += 1;
 
-    chat.map(x => io.to(user.socket).emit('message out', {
-        username: x[0],
-        usercolor: x[1],
-        message: x[2],
-    }));
+    initializeMessagePane(user.socket);
 
     // io.emit('message out', "User "+user.name+" has joined. Users online: "+usersOnline);
 
@@ -275,9 +228,10 @@ io.on('connection', (socket) => {
         user.sendMessage(message);
     });
 
-    socket.on('login', (username) => {
-        console.log(`${user.name} logged in as: ${username}`);
+    socket.on('login', (username, color) => {
+        console.log(`${user.name} logged in as: ${username} with color ${color}`);
         user.updateName(username);
+        user.updateColor(color);
         io.to(user.socket).emit('logged-in', user.name);
         user.announce('has joined the chat!');
         io.emit('new-highscore', highScoreData);
@@ -293,8 +247,10 @@ io.on('connection', (socket) => {
     });
 });
 
-// EXPRESS
 
+/*
+ * SET UP EXPRESS
+ */
 app.use(express.static('resources'));
 app.use(helmet());
 
