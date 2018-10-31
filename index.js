@@ -48,6 +48,7 @@ const updateHighScores = async () => {
     const client = await pool.connect();
     const res = await client.query(psqlGetHigscores);
     highScoreData = res.rows;
+    client.release();
     console.log(highScoreData);
     io.emit('new-highscore', highScoreData);
 };
